@@ -1,52 +1,44 @@
 ﻿#Prompts the user to log into their Azure account
 Add-AzureRmAccount
 
-#$rg = Read-Host -Prompt "What would you like to name the new Resource Group"
-
-#Check to see if Resource Group is avaliable or not, if it is then create a new resource group with the given name,
-#if not then prompt the user to give a new name and create the resource group with that name 
+#Checks if the Resource Group name is avalibale and will prmpt the user to keep trying a new name until they input one that is avaliable
 #https://msdn.microsoft.com/en-us/library/mt603831.aspx
 #https://msdn.microsoft.com/en-us/library/mt603739.aspx
-<#do
-{
-    $rg = Read-Host -Prompt "What would you like to name the new Resource Group"
-    if (!(Get-AzureRmResourceGroup -ResourceGroupName $rg -ErrorAction Ignore)) 
-    {
-        New-AzureRmResourceGroup -ResourceGroupName $rg -Location "West Europe"
-    } 
-    else {
-        $rg = Read-Host -Prompt "Resouce Group name not avaliable, please select another"
-        New-AzureRmResourceGroup -ResourceGroupName $rg -Location "West Europe"
-    }
-    
-}
-while (!(Get-AzureRmResourceGroup -ResourceGroupName $rg -ErrorAction Ignore))
-#>
-#do
-#{
-#    $rg = Read-Host -Prompt "What would you like to name the new Resource Group"
-#     New-AzureRmResourceGroup -ResourceGroupName $rg -Location "West Europe"
-#}
-#while (!(Get-AzureRmResourceGroup -ResourceGroupName $rg -ErrorAction Ignore))
-
 do
 {
-    if (!(Get-AzureRmResourceGroup -ResourceGroupName $rg -ErrorAction Ignore))
+    if ($null -ne $rg)
     {
-        Write-Host -Prompt "Resouce Group name not avaliable"
-        
+        Write-Host "Sorry that Resource Group name isn't avaliable, try again"
     }
 
     $rg = Read-Host -Prompt "What would you like to name the new Resource Group?"
-    New-AzureRmResourceGroup -ResourceGroupName $rg -Location "West Europe"
+
 }
-until (Get-AzureRmResourceGroup -ResourceGroupName $rg)
+until (!(Get-AzureRmResourceGroup -ResourceGroupName $rg -ErrorAction Ignore))
+
+#Creates a new Resource Group using the name that was checked against the Azure account
+New-AzureRmResourceGroup -ResourceGroupName $rg -Location "West Europe"
 
 do
 {
-    # coming round from a previous loop, $num exists, indicating this is a retry.
-    if ($null -ne $num) { Write-Host "Sorry, try again" }
+    if ($null -ne $asp)
+    {
+        Write-Host "Sorry App Service Plan name taken, try again"
+    }
 
-    [int]$num = Read-Host "Enter a number"
+    $asp = Read-Host -Prompt "What would you like to name the new App Service Plan?"
 
-} until ($num -gt 10)
+}
+until (!(Get-AzureRmAppServicePlan -Name $asp -ErrorAction Ignore))
+
+#Creates a new App Service Plan
+#https://docs.microsoft.com/en-us/powershell/resourcemanager/AzureRM.Websites/v2.1.0/new-azurermappserviceplan
+New-AzureRmAppServicePlan -ResourceGroupName $rg -Name $asp -location "West Europe"
+
+#https://docs.microsoft.com/en-us/powershell/resourcemanager/AzureRM.Websites/v2.1.0/new-azurermwebapp
+#New-AzureRmWebApp -ResourceGroupName $rg
+
+#https://docs.microsoft.com/en-us/powershell/resourcemanager/AzureRM.Websites/v2.1.0/get-azurermwebapp
+#Get-AzureRmWebApp -ResourceGroupName $rg
+
+#https://github.com/Microsoft/azure-docs/blob/master/articles/app-service-web/app-service-web-app-azure-resource-manager-powershell.md
