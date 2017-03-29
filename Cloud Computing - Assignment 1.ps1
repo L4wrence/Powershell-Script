@@ -94,25 +94,90 @@ Write-Host "Deployed Webapps:"
 Get-AzureRmWebApp -ResourceGroupName $rg | % {$_.Name }
 
 <#*********************************************************************************************************************************************************************#>
-#Show SQL capability for West Europe
-#Create SQL Server A in West Europe and firewall rule
-#Create SQL Server B in US East and firewall rule
-#Include credentials as part of the script (https://docs.microsoft.com/en-us/powershell/resourcemanager/azurerm.sql/v2.1.0/set-azurermsqlserver)
+<#*********************************************************************************************************************************************************************#>
+<#*********************************************************************************************************************************************************************#>
+<#*********************************************************************************************************************************************************************#>
+<#*********************************************************************************************************************************************************************#>
+
+#Show SQL capability for West Europe DONE
+#Create SQL Server A in West Europe and firewall rule DONE
+#Create SQL Server B in US East and firewall rule DONE
+#Include credentials as part of the script DONE
 #Deploy database to Server A
 #Copy database from SQL Server A to SQL Server B
 
-#https://docs.microsoft.com/en-us/powershell/resourcemanager/azurerm.sql/v2.1.0/new-azurermsqlserver
-New-AzureRmSqlServer -ResourceGroupName $rg -Location "West Europe" -ServerName $sql_1 -ServerVersion "12.0"
+#https://docs.microsoft.com/en-us/powershell/resourcemanager/azurerm.sql/v2.3.0/get-azurermsqlcapability
+Get-AzureRmSqlCapability -LocationName "West Europe"
+
+Get-AzureRmSqlCapability -LocationName "East US"
+
+do
+{
+    $sql_1 = Read-Host -Prompt "What would you like to name the first SQL Sever?"
+
+    #https://docs.microsoft.com/en-us/azure/sql-database/sql-database-get-started-powershell
+    $sqlpassword = ConvertTo-SecureString "El3phant" -AsPlainText -Force
+
+    $credentials = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "lmathurin" , $sqlpassword
+
+    try
+    {
+        #https://docs.microsoft.com/en-us/powershell/resourcemanager/azurerm.sql/v2.1.0/new-azurermsqlserver
+        New-AzureRmSqlServer -ResourceGroupName $rg -Location "West Europe" -ServerName $sql_1 -ServerVersion "12.0" -SqlAdministratorCredentials $credentials -ErrorAction Stop
+    }
+    catch
+    {
+        Write-Host ""
+        $error[0]|select -expand exception
+        Write-Host ""
+    }
+}
+while (!(Get-AzureRmSqlServer -ResourceGroupName $rg -ServerName $sql_1 -ErrorAction Ignore))
 
 #https://docs.microsoft.com/en-us/powershell/resourcemanager/azurerm.sql/v2.1.0/new-azurermsqlserverfirewallrule
 New-AzureRmSqlServerFirewallRule -ResourceGroupName $rg -ServerName $sql_1 -FirewallRuleName "Everything" -StartIpAddress "0.0.0.0" -EndIpAddress "255.255.255.255"
 
-New-AzureRmSqlServer -ResourceGroupName $rg -Location "US East" -ServerName $sql2 -ServerVersion "12.0"
+do
+{
+    $sql_2 = Read-Host -Prompt "What would you like to name the second SQL Sever?"
 
-New-AzureRmSqlServerFirewallRule -ResourceGroupName $rg -ServerName $sql_1 -FirewallRuleName "Everything" -StartIpAddress "0.0.0.0" -EndIpAddress "255.255.255.255"
+    $sqlpassword = ConvertTo-SecureString "El3phant" -AsPlainText -Force
+
+    $credentials = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "lmathurin" , $sqlpassword
+
+    try
+    {
+        New-AzureRmSqlServer -ResourceGroupName $rg -Location "East US" -ServerName $sql_2 -ServerVersion "12.0" -SqlAdministratorCredentials $credentials -ErrorAction Stop
+    }
+    catch
+    {
+        Write-Host ""
+        $error[0]|select -expand exception
+        Write-Host ""
+    }
+}
+while (!(Get-AzureRmSqlServer -ResourceGroupName $rg -ServerName $sql_2 -ErrorAction Ignore))
+
+New-AzureRmSqlServerFirewallRule -ResourceGroupName $rg -ServerName $sql_2 -FirewallRuleName "Everything" -StartIpAddress "0.0.0.0" -EndIpAddress "255.255.255.255"
+
+do
+{
+    if ($null -ne $db)
+    {
+        Write-Host "Sorry that Database name isn't avaliable, try again"
+    }
+
+    $db = Read-Host -Prompt "What would you like to name the new SQL Database?"
+
+}
+until (!(Get-AzureRmSqlDatabase -ResourceGroupName $rg -ServerName $sql_1 -DatabaseName $db -ErrorAction Ignore))
 
 #https://docs.microsoft.com/en-us/powershell/resourcemanager/azurerm.sql/v2.2.0/new-azurermsqldatabase
-New-AzureRmSqlDatabase
+New-AzureRmSqlDatabase -DatabaseName $db -ServerName $sql_1 -ResourceGroupName $rg
+
+
+
+
 
 
 
@@ -124,6 +189,11 @@ New-AzureRmSqlDatabase
 
 
 <#*********************************************************************************************************************************************************************#>
+<#*********************************************************************************************************************************************************************#>
+<#*********************************************************************************************************************************************************************#>
+<#*********************************************************************************************************************************************************************#>
+<#*********************************************************************************************************************************************************************#>
+
 #Create Azure BLOB Storage (http://derekfoster.cloudapp.net/cc2017/workshop4.htm)
 #Export DB .bacpac on SQL Server A to BLOB storage
 #Get status of export operation
@@ -132,6 +202,10 @@ New-AzureRmSqlDatabase
 #Get status of import operation
 #Backup both webapps to BLOB storage
 #Create new notification hub to resource group
+
+#https://docs.microsoft.com/en-us/azure/sql-database/sql-database-export-powershell
+
+#https://github.com/Azure/azure-content-nlnl/blob/master/articles/sql-database/sql-database-import-powershell.md
 
 #https://docs.microsoft.com/en-us/powershell/resourcemanager/azurerm.notificationhubs/v2.2.0/new-azurermnotificationhub
 New-AzureRmNotificationHub
