@@ -1,4 +1,11 @@
-﻿#The user first needs to login in to their Azure account before any thing can be created
+﻿#Create a Resource Group (DONE)
+#Create an App Service Plan (DONE)
+#Create the first web app (DONE)
+#Create the second web app (DONE)
+#Open both webapps in internet explorer (DONE)
+#Display the number of webapps that are currently deployed the app service plan (DONE)
+
+#The user first needs to login in to their Azure account before any thing can be created
 Add-AzureRmAccount
 
 #A Resource group needs to be created. We will check that the resource group name that they want to use is avaliable or not before attempting to create it to avoid any errors
@@ -99,22 +106,24 @@ Get-AzureRmWebApp -ResourceGroupName $rg | % {$_.Name }
 <#*********************************************************************************************************************************************************************#>
 <#*********************************************************************************************************************************************************************#>
 
-#Show SQL capability for West Europe DONE
-#Create SQL Server A in West Europe and firewall rule DONE
-#Create SQL Server B in US East and firewall rule DONE
-#Include credentials as part of the script DONE
-#Deploy database to Server A
-#Copy database from SQL Server A to SQL Server B
+#Show SQL capability for West Europe (DONE)
+#Create SQL Server A in West Europe and firewall rule (DONE)
+#Create SQL Server B in US East and firewall rule (DONE)
+#Include credentials as part of the script (DONE)
+#Deploy database to Server A (DONE)
+#Copy database from SQL Server A to SQL Server B (DONE)
 
 #https://docs.microsoft.com/en-us/powershell/resourcemanager/azurerm.sql/v2.3.0/get-azurermsqlcapability
 Get-AzureRmSqlCapability -LocationName "West Europe"
 
 Get-AzureRmSqlCapability -LocationName "East US"
 
+#Prompts the user for a name for the SQL Server and then attempts too create it. If an error is thrown the rror message pops up and then re prompts the user to enter a new name
 do
 {
     $sql_1 = Read-Host -Prompt "What would you like to name the first SQL Sever?"
 
+    #To avoid a prompt fot the SQL credentials from appearing when running the script wen need to add a credentials parameter to the New-AzureRmSqlServer cmdlet
     #https://docs.microsoft.com/en-us/azure/sql-database/sql-database-get-started-powershell
     $sqlpassword = ConvertTo-SecureString "El3phant" -AsPlainText -Force
 
@@ -172,21 +181,16 @@ do
 }
 until (!(Get-AzureRmSqlDatabase -ResourceGroupName $rg -ServerName $sql_1 -DatabaseName $db -ErrorAction Ignore))
 
+#Creates a blank database in the first SQL Server we created ready for it to be copied to the second SQL Sevrer
 #https://docs.microsoft.com/en-us/powershell/resourcemanager/azurerm.sql/v2.2.0/new-azurermsqldatabase
 New-AzureRmSqlDatabase -DatabaseName $db -ServerName $sql_1 -ResourceGroupName $rg
 
+$dbcopy = "$db-copy"
+Write-Host "Copying $db in $sql_1 to $sql_2 as $dbcopy"
 
-
-
-
-
-
-
-
-
-
-
-
+#Copies over the data from the SQL Database in Server A to Server B
+#https://docs.microsoft.com/en-us/azure/sql-database/scripts/sql-database-copy-database-to-new-server-powershell
+New-AzureRmSqlDatabaseCopy -ResourceGroupName $rg -ServerName $sql_1 -DatabaseName $db -CopyResourceGroupName $rg -CopyServerName $sql_2 -CopyDatabaseName $dbcopy
 
 <#*********************************************************************************************************************************************************************#>
 <#*********************************************************************************************************************************************************************#>
@@ -202,6 +206,29 @@ New-AzureRmSqlDatabase -DatabaseName $db -ServerName $sql_1 -ResourceGroupName $
 #Get status of import operation
 #Backup both webapps to BLOB storage
 #Create new notification hub to resource group
+
+#Before we can export the SQL Database to BLOB Storage we need to create the Storage Account we wish to store it in 
+do
+{
+    $StorageAccount = Read-Host -Prompt "What would you like to name the Storage Account?"
+
+    try
+    {
+        New-AzureRmStorageAccount -ResourceGroupName $rg -AccountName $StorageAccount -Location "West Europe" -Type "Standard_LRS" -ErrorAction Stop
+    }
+    catch
+    {
+        Write-Host ""
+        $error[0]|select -expand exception
+        Write-Host ""
+    }
+}
+until (Get-AzureRmStorageAccount -ResourceGroupName $rg -Name $StorageAccount -ErrorAction Ignore)
+
+#Set the storage account we just created as the default for the azure account, this means we no longer need to specify the ResourceGroupName and StorageAccountName parameters
+Set-AzureRmCurrentStorageAccount -ResourceGroupName $rg -StorageAccountName $StorageAccount
+
+New-AzureStorageContainer -Name $dbbackup -Permission Blob
 
 #https://docs.microsoft.com/en-us/azure/sql-database/sql-database-export-powershell
 
