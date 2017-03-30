@@ -17,7 +17,7 @@ DB on lmathurinus - table1-copy
 Storage Account - lmathurincloud - West Europe
 Storage Container - db-backup
 table 1 backup in container
-3rd SQL Server - lmathurincanada - Canada East - Firewall ruletable
+3rd SQL Server - lmathurincanada - Canada East - Firewall rule
 DB on lmathurincanada - table1
 Back up both Web Apps to BLOB Storage
 
