@@ -42,7 +42,7 @@ until (!(Get-AzureRmAppServicePlan -ResourceGroupName $rg -Name $asp -ErrorActio
 
 #Creates the new App Service Plan
 #https://docs.microsoft.com/en-us/powershell/resourcemanager/AzureRM.Websites/v2.1.0/new-azurermappserviceplan
-New-AzureRmAppServicePlan -ResourceGroupName $rg -Name $asp -location "West Europe"
+New-AzureRmAppServicePlan -ResourceGroupName $rg -Name $asp -location "West Europe" -Tier Standard
 
 #Before any webapps can be deployed we need to check if the name the user wants for the web app is avaliable before we attept to create it
 #https://docs.microsoft.com/en-us/powershell/resourcemanager/AzureRM.Websites/v2.1.0/get-azurermwebapp
@@ -125,14 +125,14 @@ do
 
     #To avoid a prompt fot the SQL credentials from appearing when running the script wen need to add a credentials parameter to the New-AzureRmSqlServer cmdlet
     #https://docs.microsoft.com/en-us/azure/sql-database/sql-database-get-started-powershell
-    $sqlpassword = ConvertTo-SecureString "El3phant" -AsPlainText -Force
+    $sqlpassword1 = ConvertTo-SecureString "El3phant" -AsPlainText -Force
 
-    $credentials = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "lmathurin" , $sqlpassword
+    $credentials1 = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "lmathurin" , $sqlpassword1
 
     try
     {
         #https://docs.microsoft.com/en-us/powershell/resourcemanager/azurerm.sql/v2.1.0/new-azurermsqlserver
-        New-AzureRmSqlServer -ResourceGroupName $rg -Location "West Europe" -ServerName $sql_1 -ServerVersion "12.0" -SqlAdministratorCredentials $credentials -ErrorAction Stop
+        New-AzureRmSqlServer -ResourceGroupName $rg -Location "West Europe" -ServerName $sql_1 -ServerVersion "12.0" -SqlAdministratorCredentials $credentials1 -ErrorAction Stop
     }
     catch
     {
@@ -143,6 +143,7 @@ do
 }
 while (!(Get-AzureRmSqlServer -ResourceGroupName $rg -ServerName $sql_1 -ErrorAction Ignore))
 
+Write-Host "Setting Firewall Rule.."
 #https://docs.microsoft.com/en-us/powershell/resourcemanager/azurerm.sql/v2.1.0/new-azurermsqlserverfirewallrule
 New-AzureRmSqlServerFirewallRule -ResourceGroupName $rg -ServerName $sql_1 -FirewallRuleName "Everything" -StartIpAddress "0.0.0.0" -EndIpAddress "255.255.255.255"
 
@@ -150,13 +151,13 @@ do
 {
     $sql_2 = Read-Host -Prompt "What would you like to name the second SQL Sever?"
 
-    $sqlpassword = ConvertTo-SecureString "El3phant" -AsPlainText -Force
+    $sqlpassword2 = ConvertTo-SecureString "El3phant" -AsPlainText -Force
 
-    $credentials = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "lmathurin" , $sqlpassword
+    $credentials2 = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "lmathurin" , $sqlpassword2
 
     try
     {
-        New-AzureRmSqlServer -ResourceGroupName $rg -Location "East US" -ServerName $sql_2 -ServerVersion "12.0" -SqlAdministratorCredentials $credentials -ErrorAction Stop
+        New-AzureRmSqlServer -ResourceGroupName $rg -Location "East US" -ServerName $sql_2 -ServerVersion "12.0" -SqlAdministratorCredentials $credentials2 -ErrorAction Stop
     }
     catch
     {
@@ -167,6 +168,7 @@ do
 }
 while (!(Get-AzureRmSqlServer -ResourceGroupName $rg -ServerName $sql_2 -ErrorAction Ignore))
 
+Write-Host "Setting Firewall Rule.."
 New-AzureRmSqlServerFirewallRule -ResourceGroupName $rg -ServerName $sql_2 -FirewallRuleName "Everything" -StartIpAddress "0.0.0.0" -EndIpAddress "255.255.255.255"
 
 do
@@ -198,14 +200,14 @@ New-AzureRmSqlDatabaseCopy -ResourceGroupName $rg -ServerName $sql_1 -DatabaseNa
 <#*********************************************************************************************************************************************************************#>
 <#*********************************************************************************************************************************************************************#>
 
-#Create Azure BLOB Storage (http://derekfoster.cloudapp.net/cc2017/workshop4.htm)
-#Export DB .bacpac on SQL Server A to BLOB storage
-#Get status of export operation
-#Create SQL Server C with firewall rule in Canada East
-#Restore .bacpac from BLOB storage to SQL Server C
-#Get status of import operation
-#Backup both webapps to BLOB storage
-#Create new notification hub to resource group
+#Create Azure BLOB Storage (DONE)
+#Export DB .bacpac on SQL Server A to BLOB storage (DONE)
+#Get status of export operation (DONE)
+#Create SQL Server C with firewall rule in Canada East (DONE)
+#Restore .bacpac from BLOB storage to SQL Server C (DONE)
+#Get status of import operation (DONE)
+#Backup both webapps to BLOB storage (DONE)
+#Create new notification hub to resource group (IMPOSSIBLE)
 
 #Before we can export the SQL Database to BLOB Storage we need to create the Storage Account we wish to store it in 
 do
@@ -228,12 +230,121 @@ until (Get-AzureRmStorageAccount -ResourceGroupName $rg -Name $StorageAccount -E
 #Set the storage account we just created as the default for the azure account, this means we no longer need to specify the ResourceGroupName and StorageAccountName parameters
 Set-AzureRmCurrentStorageAccount -ResourceGroupName $rg -StorageAccountName $StorageAccount
 
+do
+{
+    if ($null -ne $dbbackup)
+    {
+        Write-Host "Sorry that folder already exists, please try again"
+    }
+
+    $dbbackup = Read-Host -Prompt "Please create a new folder to store DB backups"
+
+}
+until (!(Get-AzureStorageContainer -Name $dbbackup -ErrorAction Ignore))
+
 New-AzureStorageContainer -Name $dbbackup -Permission Blob
 
 #https://docs.microsoft.com/en-us/azure/sql-database/sql-database-export-powershell
 
-#https://github.com/Azure/azure-content-nlnl/blob/master/articles/sql-database/sql-database-import-powershell.md
+$dbbacpac = $db + "-" + (Get-Date).ToString("yyyyMMddHHmm") + ".bacpac"
 
-#https://docs.microsoft.com/en-us/powershell/resourcemanager/azurerm.notificationhubs/v2.2.0/new-azurermnotificationhub
-New-AzureRmNotificationHub
+#https://docs.microsoft.com/en-us/powershell/resourcemanager/azurerm.storage/v2.3.0/get-azurermstorageaccountkey
+$StorageKey = (Get-AzureRmStorageAccountKey -Name $StorageAccount -ResourceGroupName $rg)[0].Value
+
+$StorageFolder = "https://$StorageAccount.blob.core.windows.net/$dbbackup/"
+
+$StorageUri = $StorageFolder + $dbbacpac
+
+$export = New-AzureRmSqlDatabaseExport -ResourceGroupName $rg -ServerName $sql_1 -DatabaseName $db -StorageKeytype "StorageAccessKey" -StorageKey $StorageKey -StorageUri $StorageUri -AdministratorLogin $credentials1.UserName -AdministratorLoginPassword $credentials1.Password
+
+try
+{
+    $export
+}
+catch
+{
+        Write-Host ""
+        $error[0]|select -expand exception
+        Write-Host ""
+}
+
+Get-AzureRmSqlDatabaseImportExportStatus -OperationStatusLink $export.OperationStatusLink
+
+do{
+}
+until ((Get-AzureRmSqlDatabaseImportExportStatus -OperationStatusLink $export.OperationStatusLink | % {$_.Status }) -eq "Succeeded")
+
+Write-Host "File $Filename sucessfully uploaded"
+
+do
+{
+    $sql_3 = Read-Host -Prompt "What would you like to name the third SQL Sever?"
+
+    $sqlpassword3 = ConvertTo-SecureString "El3phant" -AsPlainText -Force
+
+    $credentials3 = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "lmathurin" , $sqlpassword3
+
+    try
+    {
+        New-AzureRmSqlServer -ResourceGroupName $rg -Location "Canada East" -ServerName $sql_3 -ServerVersion "12.0" -SqlAdministratorCredentials $credentials3 -ErrorAction Stop
+    }
+    catch
+    {
+        Write-Host ""
+        $error[0]|select -expand exception
+        Write-Host ""
+    }
+}
+while (!(Get-AzureRmSqlServer -ResourceGroupName $rg -ServerName $sql_3 -ErrorAction Ignore))
+
+New-AzureRmSqlServerFirewallRule -ResourceGroupName $rg -ServerName $sql_3 -FirewallRuleName "Everything" -StartIpAddress "0.0.0.0" -EndIpAddress "255.255.255.255"
+
+#https://github.com/Azure/azure-content-nlnl/blob/master/articles/sql-database/sql-database-import-powershell.md
+$import = New-AzureRmSqlDatabaseImport -ResourceGroupName $rg -ServerName $sql_3 -DatabaseName $db -StorageKeytype "StorageAccessKey" -StorageKey $StorageKey -StorageUri $StorageUri -AdministratorLogin $credentials1.UserName -AdministratorLoginPassword $credentials1.Password -Edition Standard -ServiceObjectiveName s0 -DatabaseMaxSizeBytes 50000 -ErrorAction Stop
+
+try
+{
+    $import
+}
+catch
+{
+        Write-Host ""
+        $error[0]|select -expand exception
+        Write-Host ""
+}
+
+Get-AzureRmSqlDatabaseImportExportStatus -OperationStatusLink $import.OperationStatusLink
+
+do{
+}
+until ((Get-AzureRmSqlDatabaseImportExportStatus -OperationStatusLink $import.OperationStatusLink | % {$_.Status }) -eq "Succeeded")
+
+Write-Host "Database Sucessfully imported"
+
+do
+{
+    if ($null -ne $wabackup)
+    {
+        Write-Host "Sorry that folder already exists, please try again"
+    }
+
+    $wabackup = Read-Host -Prompt "Please create a new folder to store Web App backups"
+
+}
+until (!(Get-AzureStorageContainer -Name $wabackup -ErrorAction Ignore))
+
+New-AzureStorageContainer -Name $wabackup -Permission Blob
+
+
+$StorageKey = (Get-AzureRmStorageAccountKey -Name $StorageAccount -ResourceGroupName $rg)[0].Value
+$context = New-AzureStorageContext -StorageAccountName $storageAccount -StorageAccountKey $storageKey
+
+$sasUrl = New-AzureStorageContainerSASToken -Name $wabackup -Permission rwdl -Context $context -ExpiryTime (Get-Date).AddMonths(1) -FullUri
+
+$wabackup1 = $wa1 + "-" + (Get-Date).ToString("yyyyMMddHHmm")
+$wabackup2 = $wa2 + "-" + (Get-Date).ToString("yyyyMMddHHmm")
+
+New-AzureRmWebAppBackup -ResourceGroupName $rg -Name $wa1 -StorageAccountUrl $sasUrl -BackupName $wabackup1
+New-AzureRmWebAppBackup -ResourceGroupName $rg -Name $wa2 -StorageAccountUrl $sasUrl -BackupName $wabackup2
+
 
