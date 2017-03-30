@@ -1,0 +1,23 @@
+Third
+Resource Group - lmathurin - West Europe
+App Service Plan - lmathurinasp
+1st Web App - lmathurinwaeu - West Europe
+2nd Web App - lmathurinwaus - East US
+Open both webapps in internet explorer
+List of currently deployed Web Apps
+
+2:2
+Show SQL cpability of West Europe and East US
+1st SQL Server - lmathurineu - West Europe - Firewall rule
+2nd SQL Server - lmathurinus - East US - Firewall rule
+DB on lmathurineu - table1
+DB on lmathurinus - table1-copy
+
+2:1
+Storage Account - lmathurincloud - West Europe
+Storage Container - db-backup
+table 1 backup in container
+3rd SQL Server - lmathurincanada - Canada East - Firewall ruletable
+DB on lmathurincanada - table1
+Back up both Web Apps to BLOB Storage
+

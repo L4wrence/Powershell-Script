@@ -69,7 +69,7 @@ do
         Write-Host "Sorry Web App name taken, try again"
     }
 
-    $wa2 = Read-Host -Prompt "What would you like to name the second new Web App to be deplyed in East US?"
+    $wa2 = Read-Host -Prompt "What would you like to name the second new Web App to be deployed in East US?"
 
 }
 until (!(Get-AzureRmWebApp -Name $wa2 -ResourceGroupName $rg -ErrorAction Ignore))
